@@ -25,7 +25,7 @@ provider:
 
 functions:
   hello:
-    handler: handler.handler
+    handler: users/handler.handler
     events:
       - http:
           path: users
