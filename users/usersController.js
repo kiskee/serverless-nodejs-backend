@@ -1,7 +1,7 @@
 const { v4: uuidv4 } = require("uuid");
 const UserService = require("./services/userService");
 const CreateUserDto = require("./dtos/CreateUserDto");
-const buildResponse = require("./utils/buildResponse");
+const buildResponse = require("../utils/buildResponse");
 
 // Inicializar el servicio de usuarios
 const userService = new UserService();

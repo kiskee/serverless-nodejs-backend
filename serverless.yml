@@ -10,6 +10,7 @@ provider:
   region: ${opt:region, 'us-east-1'}
   environment:
     USERS_TABLE: ${self:service}-${self:provider.stage}-users
+    JWT_SECRET: ${env:JWT_SECRET}
   iamRoleStatements:
     - Effect: Allow
       Action:
@@ -24,8 +25,8 @@ provider:
         - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.USERS_TABLE}/index/*
 
 functions:
-  hello:
-    handler: users/handler.handler
+  users:
+    handler: users/usersController.handler
     events:
       - http:
           path: users
@@ -55,6 +56,42 @@ functions:
           path: users/{id}
           method: delete
           cors: true
+  auth:
+    handler: auth/authController.handler
+    events:
+      - http:
+          path: auth/login
+          method: post
+          cors: true
+      - http:
+          path: auth/login-google
+          method: post
+          cors: true
+      - http:
+          path: auth/logout
+          method: post
+          cors: true
+      - http:
+          path: auth/renew-token
+          method: post
+          cors: true
+      - http:
+          path: auth/signature
+          method: get
+          cors: true
+      - http:
+          path: auth/forgot-password/{email}
+          method: post
+          cors: true
+          request:
+            parameters:
+              paths:
+                email: true
+      - http:
+          path: auth/reset-password
+          method: post
+          cors: true
+          
 
 resources:
   Resources:

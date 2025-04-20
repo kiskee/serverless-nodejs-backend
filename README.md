@@ -67,3 +67,18 @@ This will start a local emulator of AWS Lambda and tunnel your requests to and f
 Now you can invoke the function as before, but this time the function will be executed locally. Now you can develop your function locally, invoke it, and see the results immediately without having to re-deploy.
 
 When you are done developing, don't forget to run `serverless deploy` to deploy the function to the cloud.
+
+
+POST - https://jlb0fya89a.execute-api.us-east-1.amazonaws.com/dev/users
+  GET - https://jlb0fya89a.execute-api.us-east-1.amazonaws.com/dev/users
+  GET - https://jlb0fya89a.execute-api.us-east-1.amazonaws.com/dev/users/{id}
+  GET - https://jlb0fya89a.execute-api.us-east-1.amazonaws.com/dev/users/email/{email}
+  PUT - https://jlb0fya89a.execute-api.us-east-1.amazonaws.com/dev/users/{id}
+  DELETE - https://jlb0fya89a.execute-api.us-east-1.amazonaws.com/dev/users/{id}
+  POST - https://jlb0fya89a.execute-api.us-east-1.amazonaws.com/dev/auth/login
+  POST - https://jlb0fya89a.execute-api.us-east-1.amazonaws.com/dev/auth/login-google
+  POST - https://jlb0fya89a.execute-api.us-east-1.amazonaws.com/dev/auth/logout
+  POST - https://jlb0fya89a.execute-api.us-east-1.amazonaws.com/dev/auth/renew-token
+  GET - https://jlb0fya89a.execute-api.us-east-1.amazonaws.com/dev/auth/signature
+  POST - https://jlb0fya89a.execute-api.us-east-1.amazonaws.com/dev/auth/forgot-password/{email}
+  POST - https://jlb0fya89a.execute-api.us-east-1.amazonaws.com/dev/auth/reset-password
