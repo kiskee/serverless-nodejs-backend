@@ -7,6 +7,7 @@ const JWT_SECRET = process.env.JWT_SECRET;
 class AuthService {
   constructor() {
     this.userRepository = new UserRepository();
+    this.blacklistedTokens = new Set();
   }
 
   async login(data) {
@@ -52,10 +53,10 @@ class AuthService {
     return { message: "Google login successful", data };
   }
 
-  async logout(headers) {
-    // Implementación de la lógica de cierre de sesión
-    // Aquí puedes usar tu lógica para cerrar la sesión del usuario
-    return { message: "Logout successful" };
+  logout(token) {
+    // Agrega el token al blacklist para invalidarlo
+    this.blacklistedTokens.add(token);
+    return { message: 'Logout successful' };
   }
 
   async renewToken(data) {
