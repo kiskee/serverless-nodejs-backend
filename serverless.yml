@@ -76,10 +76,6 @@ functions:
           method: post
           cors: true
       - http:
-          path: auth/signature
-          method: get
-          cors: true
-      - http:
           path: auth/forgot-password/{email}
           method: post
           cors: true

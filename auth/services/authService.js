@@ -1,39 +1,137 @@
+const jwt = require("jsonwebtoken");
+const UserRepository = require("../../users/repository/userRepository");
+const bcrypt = require('bcryptjs');
+
+const JWT_SECRET = process.env.JWT_SECRET;
+
 class AuthService {
+  constructor() {
+    this.userRepository = new UserRepository();
+  }
 
-    constructor(){}
+  async login(data) {
+    // Simulate user search (replace with your database logic)
+    const user = await this.userRepository.findByEmail(data.email);
 
-    async login(data) {
-        // Implementación de la lógica de inicio de sesión
-        // Aquí puedes usar tu lógica para autenticar al usuario
-        return { message: "Login successful", data };
+    if (Object.keys(user).length === 0 && user.constructor === Object) {
+      throw new UnauthorizedException("Usuario o Contraseña invalidos");
     }
 
+    // Validate password
+    const isPasswordValid = await this.comparePasswords(
+      loginDto.password,
+      user.password
+    );
 
-    async loginGoogle(data) {
-        // Implementación de la lógica de inicio de sesión con Google
-        // Aquí puedes usar tu lógica para autenticar al usuario con Google
-        return { message: "Google login successful", data };
-    }
+    
 
-    async logout(headers) {
-        // Implementación de la lógica de cierre de sesión
-        // Aquí puedes usar tu lógica para cerrar la sesión del usuario
-        return { message: "Logout successful" };
-    }
+    return { message: "Login successful", user, isPasswordValid };
+  }
 
-    async renewToken(data) {
-        // Implementación de la lógica de renovación de token
-        // Aquí puedes usar tu lógica para renovar el token del usuario
-        return { message: "Token renewed", data };
-    }
+  /**
+   * Handles user login
+   * @param loginDto - Data transfer object containing user credentials
+   * @returns Object with user details and tokens
+   */
+  //    async login(loginDto) {
+  //     try {
+  //       // Simulate user search (replace with your database logic)
+  //       const user = await usersService.findByEmail(loginDto.email);
 
-    async resetPassword(token, newPassword) {
-        // Implementación de la lógica de restablecimiento de contraseña
-        // Aquí puedes usar tu lógica para restablecer la contraseña del usuario
-        return { message: "Password reset successful" };
-    }
+  //       if (Object.keys(user).length === 0 && user.constructor === Object) {
+  //         throw new UnauthorizedException('Usuario o Contraseña invalidos');
+  //       }
 
+  //       // Validate password
+  //       const isPasswordValid = await this.comparePasswords(
+  //         loginDto.password,
+  //         user.password,
+  //       );
 
+  //       if (!isPasswordValid) {
+  //         throw new UnauthorizedException('Usuario o Contraseña invalidos');
+  //       }
+
+  //       // Generate tokens
+  //       const accessToken = this.generateAccessToken(user);
+  //       const refreshToken = this.generateRefreshToken(user);
+
+  //       return {
+  //         user: {
+  //           id: user.id,
+  //           email: user.email,
+  //           role: user.role,
+  //           picture: user.picture,
+  //           name: user.name,
+  //           modules: user.modules,
+  //         },
+  //         accessToken,
+  //         refreshToken,
+  //       };
+  //     } catch (error) {
+  //       throw error;
+  //     }
+  //   }
+
+  async loginGoogle(data) {
+    // Implementación de la lógica de inicio de sesión con Google
+    // Aquí puedes usar tu lógica para autenticar al usuario con Google
+    return { message: "Google login successful", data };
+  }
+
+  async logout(headers) {
+    // Implementación de la lógica de cierre de sesión
+    // Aquí puedes usar tu lógica para cerrar la sesión del usuario
+    return { message: "Logout successful" };
+  }
+
+  async renewToken(data) {
+    // Implementación de la lógica de renovación de token
+    // Aquí puedes usar tu lógica para renovar el token del usuario
+    return { message: "Token renewed", data };
+  }
+
+  async resetPassword(token, newPassword) {
+    // Implementación de la lógica de restablecimiento de contraseña
+    // Aquí puedes usar tu lógica para restablecer la contraseña del usuario
+    return { message: "Password reset successful" };
+  }
+
+  async forgotPassword(email) {
+    // Implementación de la lógica de olvido de contraseña
+    // Aquí puedes usar tu lógica para enviar un correo electrónico de restablecimiento de contraseña
+    return { message: "Password reset email sent", email };
+  }
+
+  generateAccessToken(user) {
+    return jwt.sign(
+      {
+        sub: user.id,
+        email: user.email,
+      },
+      JWT_SECRET,
+      {
+        expiresIn: "60m", // Token expira en 60 minutos
+      }
+    );
+  }
+
+  generateRefreshToken(user) {
+    return jwt.sign(
+      {
+        sub: user.id,
+        email: user.email,
+      },
+      JWT_SECRET,
+      {
+        expiresIn: "7d", // Token de refresco válido por 7 días
+      }
+    );
+  }
+
+  async comparePasswords(plainPassword, hashedPassword) {
+    return await bcrypt.compare(plainPassword, hashedPassword);
+  }
 }
 
 module.exports = AuthService;

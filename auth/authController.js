@@ -27,10 +27,6 @@ exports.handler = async (event) => {
       return await renewToken(event);
     }
 
-    if (httpMethod === 'GET' && path.includes('/auth/signature')) {
-      return await getSignature(event);
-    }
-
     if (httpMethod === 'POST' && path.startsWith('/auth/forgot-password/')) {
       const email = pathParameters?.email;
       return await forgotPassword(email);
@@ -73,8 +69,7 @@ async function loginGoogle(event) {
 }
 
 async function logout(headers) {
-  console.log('headers', headers);
-  const token = headers?.authorization?.replace('Bearer ', '');
+  const token = headers?.Authorization?.replace('Bearer ', '');
   if (!token) return buildResponse(401, { message: 'Token no proporcionado' });
 
   const result = await authService.logout(token);
@@ -99,3 +94,10 @@ async function resetPassword(event) {
   const result = await authService.resetPassword(data.token, data.newPassword);
   return buildResponse(200, result);
 }
+
+async function forgotPassword(email) {
+  if (!email) return buildResponse(400, { message: 'Email no proporcionado' });
+
+  const result = await authService.forgotPassword(email);
+  return buildResponse(200, result);
+} 
