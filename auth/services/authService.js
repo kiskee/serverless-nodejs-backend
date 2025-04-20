@@ -1,6 +1,6 @@
 const jwt = require("jsonwebtoken");
 const UserRepository = require("../../users/repository/userRepository");
-const bcrypt = require('bcryptjs');
+const bcrypt = require("bcryptjs");
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -11,67 +11,40 @@ class AuthService {
 
   async login(data) {
     // Simulate user search (replace with your database logic)
-    const user = await this.userRepository.findByEmail(data.email);
+    try {
+      const user = await this.userRepository.findByEmail(data.email);
 
-    if (Object.keys(user).length === 0 && user.constructor === Object) {
-      throw new UnauthorizedException("Usuario o Contraseña invalidos");
+      if (Object.keys(user).length === 0 && user.constructor === Object) {
+        throw new UnauthorizedException("Usuario o Contraseña invalidos");
+      }
+
+      // Validate password
+      const isPasswordValid = await this.comparePasswords(
+        data.password,
+        user.password
+      );
+
+      if (!isPasswordValid) {
+        throw new UnauthorizedException('Usuario o Contraseña invalidos');
+      }
+
+      const accessToken = this.generateAccessToken(user);
+      const refreshToken = this.generateRefreshToken(user);
+
+      return {
+        user: {
+          id: user.id,
+          email: user.email,
+          picture: user.picture,
+          name: user.name,
+        },
+        accessToken,
+        refreshToken,
+      };
+    } catch (error) {
+      throw error;
     }
-
-    // Validate password
-    const isPasswordValid = await this.comparePasswords(
-      loginDto.password,
-      user.password
-    );
-
-    
-
-    return { message: "Login successful", user, isPasswordValid };
   }
-
-  /**
-   * Handles user login
-   * @param loginDto - Data transfer object containing user credentials
-   * @returns Object with user details and tokens
-   */
-  //    async login(loginDto) {
-  //     try {
-  //       // Simulate user search (replace with your database logic)
-  //       const user = await usersService.findByEmail(loginDto.email);
-
-  //       if (Object.keys(user).length === 0 && user.constructor === Object) {
-  //         throw new UnauthorizedException('Usuario o Contraseña invalidos');
-  //       }
-
-  //       // Validate password
-  //       const isPasswordValid = await this.comparePasswords(
-  //         loginDto.password,
-  //         user.password,
-  //       );
-
-  //       if (!isPasswordValid) {
-  //         throw new UnauthorizedException('Usuario o Contraseña invalidos');
-  //       }
-
-  //       // Generate tokens
-  //       const accessToken = this.generateAccessToken(user);
-  //       const refreshToken = this.generateRefreshToken(user);
-
-  //       return {
-  //         user: {
-  //           id: user.id,
-  //           email: user.email,
-  //           role: user.role,
-  //           picture: user.picture,
-  //           name: user.name,
-  //           modules: user.modules,
-  //         },
-  //         accessToken,
-  //         refreshToken,
-  //       };
-  //     } catch (error) {
-  //       throw error;
-  //     }
-  //   }
 
   async loginGoogle(data) {
     // Implementación de la lógica de inicio de sesión con Google
