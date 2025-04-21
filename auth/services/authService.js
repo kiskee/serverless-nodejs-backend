@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
 const UserRepository = require("../../users/repository/userRepository");
+const UserService = require("../../users/services/userService");
 const bcrypt = require("bcryptjs");
 
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -8,6 +9,7 @@ class AuthService {
   constructor() {
     this.userRepository = new UserRepository();
     this.blacklistedTokens = new Set();
+    this.userService = new UserService();
   }
 
   async login(data) {
@@ -26,7 +28,7 @@ class AuthService {
       );
 
       if (!isPasswordValid) {
-        throw new UnauthorizedException('Usuario o Contraseña invalidos');
+        throw new UnauthorizedException("Usuario o Contraseña invalidos");
       }
 
       const accessToken = this.generateAccessToken(user);
@@ -48,15 +50,46 @@ class AuthService {
   }
 
   async loginGoogle(data) {
-    // Implementación de la lógica de inicio de sesión con Google
-    // Aquí puedes usar tu lógica para autenticar al usuario con Google
-    return { message: "Google login successful", data };
+    try {
+      // 1. Validar que el email esté verificado por Google
+      if (!data.email_verified) {
+        throw new UnauthorizedException("Error al intentar entrar con Google");
+      }
+      let user = await this.userRepository.findByEmail(data.email);
+
+      // 3. Si no existe, crear un nuevo usuario
+      if (Object.keys(user).length < 1) {
+        user = await this.userService.createUser(data);
+      }
+      console.log("user", user);
+      if (user.sub !== data.sub) {
+        throw new UnauthorizedException("Error al intentar entrar con Google");
+      }
+
+      const accessToken = this.generateAccessToken(user);
+      const refreshToken = this.generateRefreshToken(user);
+
+      return {
+        user: {
+          id: user.id,
+          email: user.email,
+          role: user.role,
+          picture: user.picture,
+          name: user.name,
+          modules: user.modules,
+        },
+        accessToken,
+        refreshToken,
+      };
+    } catch (error) {
+      throw error;
+    }
   }
 
   logout(token) {
     // Agrega el token al blacklist para invalidarlo
     this.blacklistedTokens.add(token);
-    return { message: 'Logout successful' };
+    return { message: "Logout successful" };
   }
 
   async renewToken(data) {

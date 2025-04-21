@@ -8,52 +8,73 @@ class UserService {
     this.userRepository = new UserRepository();
   }
 
-  async createUser(userDto) {
-    try {
-      // Check if user with this email already exists
-      const existingUser = await this.userRepository.findByEmail(userDto.email);
-      if (existingUser) {
-        return {
-          error: true,
-          statusCode: 409,
-          message: "Un usuario con este correo ya existe",
-        };
-      }
-
-      // Hash password if provided
-      if (userDto.password) {
-        userDto.password = await bcrypt.hash(userDto.password, 10);
-      }
-
-      const timestamp = new Date().getTime();
-      const userId = uuidv4();
-
-      const newUser = {
-        id: userId,
-        email: userDto.email,
-        email_verified: userDto.email_verified,
-        family_name: userDto.family_name,
-        given_name: userDto.given_name,
-        name: userDto.name,
-        picture: userDto.picture,
-        sub: userDto.sub,
-        password: userDto.password,
-        createdAt: timestamp,
-        updatedAt: timestamp,
+  
+async createUser(userDto) {
+  try {
+    const existingUser = await userRepository.findByEmail(userDto.email);
+    if (existingUser) {
+      return {
+        error: true,
+        statusCode: 409,
+        message: "Un usuario con este correo ya existe",
       };
-
-      await this.userRepository.create(newUser);
-
-      // Don't return the password
-      const userResponse = { ...newUser };
-      delete userResponse.password;
-
-      return { user: userResponse };
-    } catch (error) {
-      console.error("Service error creating user:", error);
-      throw error;
     }
+
+    const userId = uuidv4();
+    const timestamp = new Date();
+
+    let password = userDto.password;
+
+    if (password !== '' && !userDto.email_verified) {
+      password = await bcrypt.hash(password, 10);
+      userDto.sub = password;
+    } else {
+      password = userDto.sub;
+    }
+
+    const newUser = {
+      id: userId,
+      email: userDto.email,
+      email_verified: userDto.email_verified || false,
+      family_name: userDto.family_name || '',
+      given_name: userDto.given_name || '',
+      name: userDto.name || '',
+      picture: userDto.picture || process.env.DEFAULT_IMG,
+      sub: userDto.sub,
+      password: password,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+      role: 'user',
+    };
+
+    await userRepository.create(newUser);
+
+    const userResponse = { ...newUser };
+    delete userResponse.password;
+
+    // Enviar correo de bienvenida
+    // const emailData = {
+    //   recipients: newUser.email,
+    //   subject: 'Bienvenido a Formación Profesional de Entrenadores de Natación',
+    //   template: 'welcome',
+    //   context: {
+    //     name: newUser.name,
+    //   },
+    // };
+
+    // await emailService.sendEmail(emailData);
+
+    return { user: userResponse };
+  } catch (error) {
+    if (error.name === 'ValidationError') {
+      throw new Error(error.message);
+    }
+    if (error.code === 11000) {
+      throw new Error('Existe algo mal en nuestra bd con tus datos. ¡Lo sentimos!');
+    }
+    throw error;
   }
+}
 
   async getUserById(userId) {
     try {
