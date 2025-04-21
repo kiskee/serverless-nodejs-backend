@@ -17,8 +17,9 @@ class AuthService {
     try {
       const user = await this.userRepository.findByEmail(data.email);
 
-      if (Object.keys(user).length === 0 && user.constructor === Object) {
-        const error = new Error("Usuario o Contraseña invalidos");
+      // Check if user exists
+      if (!user || Object.keys(user).length === 0) {
+        const error = new Error("Usuario con este email no existe");
         error.statusCode = 401;
         throw error;
       }

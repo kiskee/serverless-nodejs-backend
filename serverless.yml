@@ -11,6 +11,7 @@ provider:
   environment:
     USERS_TABLE: ${self:service}-${self:provider.stage}-users
     JWT_SECRET: ${env:JWT_SECRET}
+    DEFAULT_IMG: ${env:DEFAULT_IMG}
   iamRoleStatements:
     - Effect: Allow
       Action:
@@ -27,6 +28,8 @@ provider:
 functions:
   users:
     handler: users/usersController.handler
+    memorySize: 256
+    timeout: 10
     events:
       - http:
           path: users
@@ -58,6 +61,8 @@ functions:
           cors: true
   auth:
     handler: auth/authController.handler
+    memorySize: 256
+    timeout: 10
     events:
       - http:
           path: auth/login
@@ -111,3 +116,20 @@ resources:
                 KeyType: HASH
             Projection:
               ProjectionType: ALL
+
+plugins:
+   - serverless-prune-plugin
+   - serverless-express
+
+# package:
+#   individually: true
+#   patterns:
+#     - '!node_modules/**'
+#     - '!.git/**'
+#     - '!tests/**'
+#     - '!.env*'
+
+custom:
+  prune:
+    automatic: true
+    number: 3

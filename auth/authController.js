@@ -1,103 +1,131 @@
-const AuthService = require('./services/authService');
-const buildResponse = require('../utils/buildResponse');
-const LoginDto = require('./dtos/loginDto');
-const GoogleDto = require('./dtos/googleDto');
-const ResetPasswordDto = require('./dtos/resetPasswordDto');
+const express = require("serverless-express/express");
+const serverlessExpress = require("serverless-express/handler");
 
-// Instancia del servicio de autenticación
+const AuthService = require("./services/authService");
+const LoginDto = require("./dtos/loginDto");
+const GoogleDto = require("./dtos/googleDto");
+const ResetPasswordDto = require("./dtos/resetPasswordDto");
+
 const authService = new AuthService();
+const app = express();
 
-exports.handler = async (event) => {
-  const { httpMethod, path, pathParameters, queryStringParameters, headers } = event;
+app.use(express.json());
 
-  try {
-    if (httpMethod === 'POST' && path.endsWith('/auth/login')) {
-      return await login(event);
-    }
-
-    if (httpMethod === 'POST' && path.endsWith('/auth/login-google')) {
-      return await loginGoogle(event);
-    }
-
-    if (httpMethod === 'POST' && path.endsWith('/auth/logout')) {
-      return await logout(headers);
-    }
-
-    if (httpMethod === 'POST' && path.endsWith('/auth/renew-token')) {
-      return await renewToken(event);
-    }
-
-    if (httpMethod === 'POST' && path.startsWith('/auth/forgot-password/')) {
-      const email = pathParameters?.email;
-      return await forgotPassword(email);
-    }
-
-    if (httpMethod === 'POST' && path.endsWith('/auth/reset-password')) {
-      return await resetPassword(event);
-    }
-
-    return buildResponse(404, { message: 'Ruta no encontrada' });
-  } catch (error) {
-    console.error('Error en AuthController:', error);
-    return buildResponse(500, {
-      message: 'Error interno del servidor',
-      error: error.message,
-    });
-  }
-};
-
-// --------- FUNCIONES CONTROLADORAS ---------
-
-async function login(event) {
-  const data = JSON.parse(event.body);
+app.post("/auth/login", async (req, res) => {
+  const data = req.body;
   const dto = new LoginDto(data);
   const errors = dto.validate();
-  if (errors.length) return buildResponse(400, { message: 'Validación fallida', errors });
 
-  const result = await authService.login(data);
-  return buildResponse(200, result);
-}
+  if (errors.length) {
+    return res.status(400).json({ message: "Validación fallida", errors });
+  }
 
-async function loginGoogle(event) {
-  const data = JSON.parse(event.body);
+  try {
+    const result = await authService.login(data);
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error("Error en login:", error);
+    return res
+      .status(500)
+      .json({ message: "Error interno", error: error.message });
+  }
+});
+
+app.post("/auth/login-google", async (req, res) => {
+  const data = req.body;
   const dto = new GoogleDto(data);
   const errors = dto.validate();
-  if (errors.length) return buildResponse(400, { message: 'Validación fallida', errors });
 
-  const result = await authService.loginGoogle(data);
-  return buildResponse(200, result);
-}
+  if (errors.length) {
+    return res.status(400).json({ message: "Validación fallida", errors });
+  }
 
-async function logout(headers) {
-  const token = headers?.Authorization?.replace('Bearer ', '');
-  if (!token) return buildResponse(401, { message: 'Token no proporcionado' });
+  try {
+    const result = await authService.loginGoogle(data);
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error("Error en login-google:", error);
+    return res
+      .status(500)
+      .json({ message: "Error interno", error: error.message });
+  }
+});
 
-  const result = await authService.logout(token);
-  return buildResponse(200, result);
-}
+app.post("/auth/logout", async (req, res) => {
+  const token = req.headers?.authorization?.replace("Bearer ", "");
 
-async function renewToken(event) {
-  const { refreshToken } = JSON.parse(event.body || '{}');
-  if (!refreshToken) return buildResponse(401, { message: 'Refresh token no proporcionado' });
+  if (!token) {
+    return res.status(401).json({ message: "Token no proporcionado" });
+  }
 
-  const result = await authService.renewToken(refreshToken);
-  return buildResponse(200, result);
-}
+  try {
+    const result = await authService.logout(token);
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error("Error en logout:", error);
+    return res
+      .status(500)
+      .json({ message: "Error interno", error: error.message });
+  }
+});
 
+app.post("/auth/renew-token", async (req, res) => {
+  const { refreshToken } = req.body || {};
 
-async function resetPassword(event) {
-  const data = JSON.parse(event.body);
+  if (!refreshToken) {
+    return res.status(401).json({ message: "Refresh token no proporcionado" });
+  }
+
+  try {
+    const result = await authService.renewToken(refreshToken);
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error("Error en renew-token:", error);
+    return res
+      .status(500)
+      .json({ message: "Error interno", error: error.message });
+  }
+});
+
+app.post("/auth/forgot-password/:email", async (req, res) => {
+  const email = req.params.email;
+
+  if (!email) {
+    return res.status(400).json({ message: "Email no proporcionado" });
+  }
+
+  try {
+    const result = await authService.forgotPassword(email);
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error("Error en forgot-password:", error);
+    return res
+      .status(500)
+      .json({ message: "Error interno", error: error.message });
+  }
+});
+
+app.post("/auth/reset-password", async (req, res) => {
+  const data = req.body;
   const dto = new ResetPasswordDto(data);
   const errors = dto.validate();
-  if (errors.length) return buildResponse(400, { message: 'Validación fallida', errors });
 
-  const result = await authService.resetPassword(data.token, data.newPassword);
-  return buildResponse(200, result);
-}
+  if (errors.length) {
+    return res.status(400).json({ message: "Validación fallida", errors });
+  }
 
-async function forgotPassword(email) {
-  if (!email) return buildResponse(400, { message: 'Email no proporcionado' });
+  try {
+    const result = await authService.resetPassword(
+      data.token,
+      data.newPassword
+    );
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error("Error en reset-password:", error);
+    return res
+      .status(500)
+      .json({ message: "Error interno", error: error.message });
+  }
+});
 
-  const result = await authService.forgotPassword(email);
-  return buildResponse(200, result);
-} 
+module.exports.handler = serverlessExpress(app);

@@ -1,54 +1,22 @@
-const { v4: uuidv4 } = require("uuid");
+const serverlessExpress = require("serverless-express/handler");
+const express = require("serverless-express/express");
 const UserService = require("./services/userService");
 const CreateUserDto = require("./dtos/CreateUserDto");
-const buildResponse = require("../utils/buildResponse");
+const jwtMiddleware = require("../middlewares/jwtMiddlewareExpress")
 
-// Inicializar el servicio de usuarios
 const userService = new UserService();
+const app = express();
+app.use(express.json());
 
-// Controlador principal que enruta a las diferentes funciones CRUD
-exports.handler = async (event) => {
-  console.log("Received event:", JSON.stringify(event, null, 2));
-
-  const { httpMethod, path, pathParameters } = event;
-
+app.post("/users",  async (req, res) => {
   try {
-    // Enrutamiento basado en método y ruta
-    if (httpMethod === "POST" && path.endsWith("/users")) {
-      return await createUser(event);
-    } else if (httpMethod === "GET" && pathParameters && pathParameters.id) {
-      return await getUser(event);
-    } else if (httpMethod === "GET" && path.includes("/users/email/")) {
-      return await findUserByEmail(event);
-    } else if (httpMethod === "GET" && path.endsWith("/users")) {
-      return await listUsers(event);
-    } else if (httpMethod === "PUT" && pathParameters && pathParameters.id) {
-      return await updateUser(event);
-    } else if (httpMethod === "DELETE" && pathParameters && pathParameters.id) {
-      return await deleteUser(event);
-    }
-
-    // Si no coincide con ninguna ruta
-    return buildResponse(404, { message: "Ruta no encontrada" });
-  } catch (error) {
-    console.error("Error en el controlador principal:", error);
-    return buildResponse(500, {
-      message: "Error interno del servidor",
-      error: error.message,
-    });
-  }
-};
-
-// Función para crear un usuario
-async function createUser(event) {
-  try {
-    const data = JSON.parse(event.body);
+    const data = req.body;
     const userDto = new CreateUserDto(data);
 
-    // Validate user data
+    // Validación
     const validationErrors = userDto.validate();
     if (validationErrors.length > 0) {
-      return buildResponse(400, {
+      return res.status(400).json({
         message: "Validation failed",
         errors: validationErrors,
       });
@@ -56,119 +24,116 @@ async function createUser(event) {
 
     const result = await userService.createUser(userDto);
     if (result.error) {
-      return buildResponse(result.statusCode || 400, result);
+      return res.status(result.statusCode || 400).json(result);
     }
 
-    return buildResponse(201, {
+    return res.status(201).json({
       message: "Usuario creado exitosamente",
       user: result.user,
     });
   } catch (error) {
     console.error("Error creating user:", error);
-    return buildResponse(500, {
+    return res.status(500).json({
       message: "No se pudo crear el usuario",
       error: error.message,
     });
   }
-}
+});
 
-// Función para obtener un usuario por ID
-async function getUser(event) {
+app.get("/users/:id", async (req, res) => {
   try {
-    const userId = event.pathParameters.id;
+    const userId = req.params.id;
     const user = await userService.getUserById(userId);
 
     if (!user) {
-      return buildResponse(404, { message: "Usuario no encontrado" });
+      return res.status(404).json({ message: "Usuario no encontrado" });
     }
 
-    return buildResponse(200, user);
+    return res.status(200).json(user);
   } catch (error) {
     console.error("Error getting user:", error);
-    return buildResponse(500, {
+    return res.status(500).json({
       message: "Error al obtener el usuario",
       error: error.message,
     });
   }
-}
+});
 
-// Función para buscar un usuario por email
-async function findUserByEmail(event) {
-  try {
-    const email = decodeURIComponent(event.pathParameters.email);
-    const user = await userService.getUserByEmail(email);
-
-    if (!user) {
-      return buildResponse(404, {
-        message: "Usuario no encontrado con ese email",
-      });
-    }
-
-    return buildResponse(200, user);
-  } catch (error) {
-    console.error("Error finding user by email:", error);
-    return buildResponse(500, {
-      message: "Error al buscar usuario por email",
-      error: error.message,
-    });
-  }
-}
-
-// Función para listar todos los usuarios
-async function listUsers() {
+app.get("/users", jwtMiddleware,  async (req, res) => {
   try {
     const users = await userService.getAllUsers();
-    return buildResponse(200, users);
+    return res.status(200).json(users);
   } catch (error) {
     console.error("Error listing users:", error);
-    return buildResponse(500, {
+    return res.status(500).json({
       message: "Error al listar usuarios",
       error: error.message,
     });
   }
-}
+});
 
-// Función para actualizar un usuario
-async function updateUser(event) {
+app.get("/users/email/:email", async (req, res) => {
   try {
-    const userId = event.pathParameters.id;
-    const data = JSON.parse(event.body);
+    const email = decodeURIComponent(req.params.email);
+    const user = await userService.getUserByEmail(email);
 
-    const result = await userService.updateUser(userId, data);
-    
-    if (result.error) {
-      return buildResponse(result.statusCode || 400, result);
+    if (!user) {
+      return res.status(404).json({
+        message: "Usuario no encontrado con ese email",
+      });
     }
 
-    return buildResponse(200, {
+    return res.status(200).json(user);
+  } catch (error) {
+    console.error("Error finding user by email:", error);
+    return res.status(500).json({
+      message: "Error al buscar usuario por email",
+      error: error.message,
+    });
+  }
+});
+
+app.put("/users/:id", jwtMiddleware, async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const data = req.body;
+
+    const result = await userService.updateUser(userId, data);
+
+    if (result.error) {
+      return res.status(result.statusCode || 400).json(result);
+    }
+
+    return res.status(200).json({
       message: "Usuario actualizado exitosamente",
       user: result.user,
     });
   } catch (error) {
     console.error("Error updating user:", error);
-    return buildResponse(500, {
+    return res.status(500).json({
       message: "Error al actualizar el usuario",
       error: error.message,
     });
   }
-}
+});
 
-// Función para eliminar un usuario
-async function deleteUser(event) {
+app.delete("/users/:id", jwtMiddleware, async (req, res) => {
   try {
-    const userId = event.pathParameters.id;
+    const userId = req.params.id;
     const result = await userService.deleteUser(userId);
 
     if (result.error) {
-      return buildResponse(result.statusCode || 400, result);
+      return res.status(result.statusCode || 400).json(result);
     }
 
-    return buildResponse(200, { message: "Usuario eliminado exitosamente" });
+    return res.status(200).json({ message: "Usuario eliminado exitosamente" });
   } catch (error) {
     console.error("Error deleting user:", error);
-    return buildResponse(500, {
+    return res.status(500).json({
       message: "Error al eliminar el usuario",
       error: error.message,
     });
   }
-}
+});
+
+module.exports.handler = serverlessExpress(app);
