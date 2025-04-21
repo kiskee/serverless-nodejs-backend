@@ -18,7 +18,9 @@ class AuthService {
       const user = await this.userRepository.findByEmail(data.email);
 
       if (Object.keys(user).length === 0 && user.constructor === Object) {
-        throw new UnauthorizedException("Usuario o Contraseña invalidos");
+        const error = new Error("Usuario o Contraseña invalidos");
+        error.statusCode = 401;
+        throw error;
       }
 
       // Validate password
@@ -28,7 +30,9 @@ class AuthService {
       );
 
       if (!isPasswordValid) {
-        throw new UnauthorizedException("Usuario o Contraseña invalidos");
+        const error = new Error("Usuario o Contraseña invalidos");
+        error.statusCode = 401;
+        throw error;
       }
 
       const accessToken = this.generateAccessToken(user);
@@ -53,17 +57,22 @@ class AuthService {
     try {
       // 1. Validar que el email esté verificado por Google
       if (!data.email_verified) {
-        throw new UnauthorizedException("Error al intentar entrar con Google");
+        const error = new Error("Error al intentar entrar con Google");
+        error.statusCode = 401;
+        throw error;
       }
       let user = await this.userRepository.findByEmail(data.email);
-
+      console.log("user", user);
       // 3. Si no existe, crear un nuevo usuario
-      if (Object.keys(user).length < 1) {
+      if (!user || Object.keys(user).length < 1) {
         user = await this.userService.createUser(data);
       }
-      console.log("user", user);
+
+      // console.log("user", user);
       if (user.sub !== data.sub) {
-        throw new UnauthorizedException("Error al intentar entrar con Google");
+        const error = new Error("Error al intentar entrar con Google");
+        error.statusCode = 401;
+        throw error;
       }
 
       const accessToken = this.generateAccessToken(user);
