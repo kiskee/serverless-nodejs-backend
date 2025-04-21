@@ -11,7 +11,7 @@ class UserService {
   
 async createUser(userDto) {
   try {
-    const existingUser = await userRepository.findByEmail(userDto.email);
+    const existingUser = await this.userRepository.findByEmail(userDto.email);
     if (existingUser) {
       return {
         error: true,
@@ -21,7 +21,7 @@ async createUser(userDto) {
     }
 
     const userId = uuidv4();
-    const timestamp = new Date();
+    const timestamp = new Date().toISOString();
 
     let password = userDto.password;
 
@@ -47,7 +47,7 @@ async createUser(userDto) {
       role: 'user',
     };
 
-    await userRepository.create(newUser);
+    await this.userRepository.create(newUser);
 
     const userResponse = { ...newUser };
     delete userResponse.password;
