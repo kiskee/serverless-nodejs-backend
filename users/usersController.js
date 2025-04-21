@@ -2,27 +2,30 @@ const serverlessExpress = require("serverless-express/handler");
 const express = require("serverless-express/express");
 const UserService = require("./services/userService");
 const CreateUserDto = require("./dtos/CreateUserDto");
-const jwtMiddleware = require("../middlewares/jwtMiddlewareExpress")
+const jwtMiddleware = require("../middlewares/jwtMiddlewareExpress");
+const createUserSchema = require("../schemas/createUserSchema");
 
 const userService = new UserService();
 const app = express();
 app.use(express.json());
 
-app.post("/users",  async (req, res) => {
+app.post("/users", async (req, res) => {
   try {
-    const data = req.body;
-    const userDto = new CreateUserDto(data);
+    const { error, value } = createUserSchema.validate(req.body, {
+      abortEarly: false, // para mostrar todos los errores juntos
+    });
 
-    // Validación
-    const validationErrors = userDto.validate();
-    if (validationErrors.length > 0) {
+    if (error) {
+      const validationErrors = error.details.map((err) => err.message);
       return res.status(400).json({
         message: "Validation failed",
         errors: validationErrors,
       });
     }
 
+    const userDto = new CreateUserDto(value); // ya validado
     const result = await userService.createUser(userDto);
+
     if (result.error) {
       return res.status(result.statusCode || 400).json(result);
     }
@@ -59,7 +62,7 @@ app.get("/users/:id", async (req, res) => {
   }
 });
 
-app.get("/users", jwtMiddleware,  async (req, res) => {
+app.get("/users", jwtMiddleware, async (req, res) => {
   try {
     const users = await userService.getAllUsers();
     return res.status(200).json(users);

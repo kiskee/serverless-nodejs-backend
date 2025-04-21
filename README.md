@@ -73,3 +73,4 @@ When you are done developing, don't forget to run `serverless deploy` to deploy 
   npm install --save serverless-express
   npm install --save-dev esbuild serverless-esbuild
   npm install  serverless-prune-plugin
+  npm i joi [para los shemas]
