@@ -62,13 +62,12 @@ class AuthService {
         throw error;
       }
       let user = await this.userRepository.findByEmail(data.email);
-      console.log("user", user);
       // 3. Si no existe, crear un nuevo usuario
       if (!user || Object.keys(user).length < 1) {
         user = await this.userService.createUser(data);
+        user = user.user
       }
 
-      // console.log("user", user);
       if (user.sub !== data.sub) {
         const error = new Error("Error al intentar entrar con Google");
         error.statusCode = 401;
