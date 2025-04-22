@@ -12,6 +12,10 @@ provider:
     USERS_TABLE: ${self:service}-${self:provider.stage}-users
     JWT_SECRET: ${env:JWT_SECRET}
     DEFAULT_IMG: ${env:DEFAULT_IMG}
+    GOOGLE_HOST: ${env:GOOGLE_HOST}
+    GOOGLE_PORT: ${env:GOOGLE_PORT}
+    GOOGLE_EMA: ${env:GOOGLE_EMA}
+    GOOGLE_PS: ${env:GOOGLE_PS}
   iamRoleStatements:
     - Effect: Allow
       Action:

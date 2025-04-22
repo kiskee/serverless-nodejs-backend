@@ -2,10 +2,12 @@ const bcrypt = require("bcryptjs");
 const { v4: uuidv4 } = require("uuid");
 const UserRepository = require("../repository/userRepository");
 const CreateUserDto = require("../dtos/CreateUserDto");
+const EmailService = require("../../email/services/emailService")
 
 class UserService {
   constructor() {
     this.userRepository = new UserRepository();
+    this.emailService = new EmailService()
   }
 
   
@@ -52,17 +54,17 @@ async createUser(userDto) {
     const userResponse = { ...newUser };
     delete userResponse.password;
 
-    // Enviar correo de bienvenida
-    // const emailData = {
-    //   recipients: newUser.email,
-    //   subject: 'Bienvenido a Formación Profesional de Entrenadores de Natación',
-    //   template: 'welcome',
-    //   context: {
-    //     name: newUser.name,
-    //   },
-    // };
+   // Enviar correo de bienvenida
+    const emailData = {
+      recipients: newUser.email,
+      subject: 'welcomissss',
+      template: 'welcome',
+      context: {
+        name: newUser.name,
+      },
+    };
 
-    // await emailService.sendEmail(emailData);
+    await this.emailService.sendEmail(emailData);
 
     return { user: userResponse };
   } catch (error) {

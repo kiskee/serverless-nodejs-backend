@@ -12,6 +12,7 @@
     "express": "^5.1.0",
     "joi": "^17.13.3",
     "jsonwebtoken": "^9.0.2",
+    "nodemailer": "^6.10.1",
     "serverless-express": "^2.0.12",
     "serverless-prune-plugin": "^2.1.0",
     "uuid": "^11.1.0"
